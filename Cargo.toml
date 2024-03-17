@@ -1,0 +1,16 @@
+[package]
+name = "gen-random"
+version = "0.1.0"
+authors = ["LiosK <contact@mail.liosk.net>"]
+license = "Apache-2.0"
+edition = "2021"
+description = "Print random bytes infinitely"
+publish = false
+
+[dependencies]
+
+[profile.release]
+lto = true
+
+[profile.dev]
+opt-level = 1

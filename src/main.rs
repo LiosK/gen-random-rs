@@ -73,7 +73,7 @@ fn quick_randomness_test() {
             for &e in buf {
                 self.n_ones += e.count_ones() as usize;
 
-                let shifted = self.prev << 7 & e >> 1;
+                let shifted = self.prev << 7 | e >> 1;
                 self.prev = e;
                 self.n_twins += (e ^ shifted).count_zeros() as usize;
             }

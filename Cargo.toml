@@ -1,13 +1,15 @@
 [package]
 name = "gen-random"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["LiosK <contact@mail.liosk.net>"]
 license = "Apache-2.0"
 edition = "2021"
 description = "Print random bytes infinitely"
+repository = "https://github.com/LiosK/gen-random-rs"
 publish = false
 
 [dependencies]
+getrandom = { version = "0.2", features = ["std"] }
 
 [profile.release]
 lto = true

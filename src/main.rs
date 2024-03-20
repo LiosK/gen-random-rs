@@ -1,8 +1,7 @@
-use std::{fs, io, io::prelude::*, mem};
+use std::{io, mem};
 
 const BUF_SIZE: usize = 32 * 1024;
 const RESEED_INTERVAL: usize = 512 * 1024 / BUF_SIZE;
-const DEV_URANDOM: &str = "/dev/urandom";
 
 fn main() -> io::Result<()> {
     run(&mut io::stdout().lock())
@@ -27,7 +26,7 @@ fn run(out: &mut impl io::Write) -> io::Result<()> {
     }
 
     loop {
-        fs::File::open(DEV_URANDOM)?.read_exact(unsafe { buf_seeds.align_to_mut::<u8>().1 })?;
+        getrandom::getrandom(unsafe { buf_seeds.align_to_mut::<u8>().1 })?;
 
         for mut s in buf_seeds {
             if s == 0 {
@@ -100,7 +99,7 @@ fn quick_randomness_test() {
 
     assert!(
         (p_ones - 0.5).abs() < margin,
-        "% of set bits: {}% ({}/{}; 99.999% int.: {}%-{}%)",
+        "% of set bits: {}% ({}/{}; 99.999% CI: {}%-{}%)",
         p_ones * 100.0,
         w.n_ones,
         w.n_bytes * 8,
@@ -109,7 +108,7 @@ fn quick_randomness_test() {
     );
     assert!(
         (p_twins - 0.5).abs() < margin,
-        "% of twin (00/11) bits: {}% ({}/{}; 99.999% int.: {}%-{}%)",
+        "% of twin (00/11) bits: {}% ({}/{}; 99.999% CI: {}%-{}%)",
         p_twins * 100.0,
         w.n_twins,
         w.n_bytes * 8,

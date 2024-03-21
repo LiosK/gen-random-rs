@@ -1,7 +1,7 @@
 use std::{io, mem};
 
 const BUF_SIZE: usize = 32 * 1024;
-const RESEED_INTERVAL: usize = 512 * 1024 / BUF_SIZE;
+const RESEED_INTERVAL: usize = 512 * 1024;
 
 fn main() -> io::Result<()> {
     run(&mut io::stdout().lock())
@@ -12,10 +12,6 @@ fn run(out: &mut impl io::Write) -> io::Result<()> {
     let mut buf_rands = [0u64; BUF_SIZE / mem::size_of::<u64>()];
 
     {
-        assert_eq!(mem::align_of::<u8>(), 1);
-        assert_eq!(mem::size_of::<u8>(), 1);
-        assert_eq!(mem::size_of::<u64>(), 64 / 8);
-
         let (prefix, bytes, suffix) = unsafe { buf_seeds.align_to_mut::<u8>() };
         assert_eq!(bytes.len(), BUF_SIZE);
         assert!(prefix.is_empty() && suffix.is_empty());
@@ -33,7 +29,7 @@ fn run(out: &mut impl io::Write) -> io::Result<()> {
                 continue;
             }
 
-            for _ in 0..RESEED_INTERVAL {
+            for _ in 0..(RESEED_INTERVAL / BUF_SIZE) {
                 for e in buf_rands.iter_mut() {
                     // xorshift64* (Vigna 2016)
                     s ^= s >> 12;
@@ -50,6 +46,14 @@ fn run(out: &mut impl io::Write) -> io::Result<()> {
         }
     }
 }
+
+const _STATIC_ASSERT: () = {
+    assert!(mem::align_of::<u8>() == 1);
+    assert!(mem::size_of::<u8>() == 1);
+    assert!(mem::size_of::<u64>() == 64 / 8);
+
+    assert!(RESEED_INTERVAL % BUF_SIZE == 0);
+};
 
 #[cfg(test)]
 #[test]

@@ -1,5 +1,7 @@
 use std::{io, mem};
 
+use zerocopy::AsBytes as _;
+
 const BUF_SIZE: usize = 32 * 1024;
 const RESEED_INTERVAL: usize = 512 * 1024;
 
@@ -8,27 +10,19 @@ fn main() -> io::Result<()> {
 }
 
 fn run(out: &mut impl io::Write) -> io::Result<()> {
+    const _: () = assert!(BUF_SIZE % mem::size_of::<u64>() == 0);
     let mut buf_seeds = [0u64; BUF_SIZE / mem::size_of::<u64>()];
     let mut buf_rands = [0u64; BUF_SIZE / mem::size_of::<u64>()];
 
-    {
-        let (prefix, bytes, suffix) = unsafe { buf_seeds.align_to_mut::<u8>() };
-        assert_eq!(bytes.len(), BUF_SIZE);
-        assert!(prefix.is_empty() && suffix.is_empty());
-
-        let (prefix, bytes, suffix) = unsafe { buf_rands.align_to::<u8>() };
-        assert_eq!(bytes.len(), BUF_SIZE);
-        assert!(prefix.is_empty() && suffix.is_empty());
-    }
-
     loop {
-        getrandom::getrandom(unsafe { buf_seeds.align_to_mut::<u8>().1 })?;
+        getrandom::getrandom(buf_seeds.as_bytes_mut())?;
 
         for mut s in buf_seeds {
             if s == 0 {
                 continue;
             }
 
+            const _: () = assert!(RESEED_INTERVAL % BUF_SIZE == 0);
             for _ in 0..(RESEED_INTERVAL / BUF_SIZE) {
                 for e in buf_rands.iter_mut() {
                     // xorshift64* (Vigna 2016)
@@ -38,7 +32,7 @@ fn run(out: &mut impl io::Write) -> io::Result<()> {
                     *e = s.wrapping_mul(2685821657736338717);
                 }
 
-                match out.write_all(unsafe { buf_rands.align_to::<u8>().1 }) {
+                match out.write_all(buf_rands.as_bytes()) {
                     Err(e) if e.kind() == io::ErrorKind::BrokenPipe => return Ok(()),
                     ret => ret?,
                 }
@@ -46,14 +40,6 @@ fn run(out: &mut impl io::Write) -> io::Result<()> {
         }
     }
 }
-
-const _STATIC_ASSERT: () = {
-    assert!(mem::align_of::<u8>() == 1);
-    assert!(mem::size_of::<u8>() == 1);
-    assert!(mem::size_of::<u64>() == 64 / 8);
-
-    assert!(RESEED_INTERVAL % BUF_SIZE == 0);
-};
 
 #[cfg(test)]
 #[test]
@@ -64,21 +50,21 @@ fn quick_randomness_test() {
     struct Logger {
         n_bytes: usize,
         n_ones: usize,
-        prev: u8,
+        carry: u8,
         n_twins: usize,
     }
 
     impl io::Write for Logger {
         fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-            if self.n_bytes > N {
+            if self.n_bytes >= N {
                 return Err(io::ErrorKind::BrokenPipe.into());
             }
 
             for &e in buf {
                 self.n_ones += e.count_ones() as usize;
 
-                let shifted = self.prev << 7 | e >> 1;
-                self.prev = e;
+                let shifted = self.carry | e >> 1;
+                self.carry = e << 7;
                 self.n_twins += (e ^ shifted).count_zeros() as usize;
             }
 
@@ -92,9 +78,9 @@ fn quick_randomness_test() {
     }
 
     let mut w = Logger::default();
-    assert!(run(&mut w).is_ok() && w.n_bytes > N);
+    assert!(run(&mut w).is_ok() && w.n_bytes >= N);
 
-    let n_samples = (w.n_bytes * 8) as f64;
+    let n_samples = w.n_bytes as f64 * 8.0;
     let p_ones = w.n_ones as f64 / n_samples;
     let p_twins = w.n_twins as f64 / n_samples;
 

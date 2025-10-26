@@ -1,6 +1,6 @@
 use std::{io, mem};
 
-use zerocopy::AsBytes as _;
+use zerocopy::IntoBytes as _;
 
 const BUF_SIZE: usize = 32 * 1024;
 const RESEED_INTERVAL: usize = 512 * 1024;
@@ -15,7 +15,7 @@ fn run(out: &mut impl io::Write) -> io::Result<()> {
     let mut buf_rands = [0u64; BUF_SIZE / mem::size_of::<u64>()];
 
     loop {
-        getrandom::getrandom(buf_seeds.as_bytes_mut())?;
+        getrandom::fill(buf_seeds.as_mut_bytes())?;
 
         for mut s in buf_seeds {
             if s == 0 {

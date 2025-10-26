@@ -1,6 +1,6 @@
 [package]
 name = "gen-random"
-version = "0.1.4-beta.0"
+version = "0.1.4"
 authors = ["LiosK <contact@mail.liosk.net>"]
 license = "Apache-2.0"
 edition = "2024"
@@ -9,8 +9,8 @@ repository = "https://github.com/LiosK/gen-random-rs"
 publish = false
 
 [dependencies]
-getrandom = { version = "0.2", features = ["std"] }
-zerocopy = { version = "0.7", default-features = false }
+getrandom = { version = "0.3", features = ["std"] }
+zerocopy = { version = "0.8", features = ["std"] }
 
 [profile.release]
 lto = true

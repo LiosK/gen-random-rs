@@ -10,7 +10,7 @@ fn main() -> io::Result<()> {
 }
 
 fn run(out: &mut impl io::Write) -> io::Result<()> {
-    const _: () = assert!(BUF_SIZE % mem::size_of::<u64>() == 0);
+    const _: () = assert!(BUF_SIZE.is_multiple_of(mem::size_of::<u64>()));
     let mut buf_seeds = [0u64; BUF_SIZE / mem::size_of::<u64>()];
     let mut buf_rands = [0u64; BUF_SIZE / mem::size_of::<u64>()];
 
@@ -22,7 +22,7 @@ fn run(out: &mut impl io::Write) -> io::Result<()> {
                 continue;
             }
 
-            const _: () = assert!(RESEED_INTERVAL % BUF_SIZE == 0);
+            const _: () = assert!(RESEED_INTERVAL.is_multiple_of(BUF_SIZE));
             for _ in 0..(RESEED_INTERVAL / BUF_SIZE) {
                 for e in buf_rands.iter_mut() {
                     // xorshift64* (Vigna 2016)

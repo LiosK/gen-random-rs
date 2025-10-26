@@ -1,9 +1,9 @@
 [package]
 name = "gen-random"
-version = "0.1.3"
+version = "0.1.4-beta.0"
 authors = ["LiosK <contact@mail.liosk.net>"]
 license = "Apache-2.0"
-edition = "2021"
+edition = "2024"
 description = "Print random bytes infinitely"
 repository = "https://github.com/LiosK/gen-random-rs"
 publish = false
